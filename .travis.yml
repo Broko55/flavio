@@ -2,19 +2,16 @@ language: python
 python:
   - "3.5"
   - "3.6"
-# matrix:
-#   include:
-#     - python: 3.7
-#       dist: xenial
-#       sudo: true
+  - "3.7"
+services:
+  - xvfb
+
+matrix:
+  allow_failures:
+    - python: "3.7"
 
 notifications:
   email: false
-
-before_script:
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-  - sleep 3 # give xvfb some time to start
 
 before_install:
   - pip install cython  # for pypmc
