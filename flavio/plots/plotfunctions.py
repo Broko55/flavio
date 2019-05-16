@@ -68,7 +68,7 @@ def error_budget_pie(err_dict, other_cutoff=0.03):
     return plt.pie(fracs, labels=labels, autopct=my_autopct, wedgeprops = {'linewidth':0.5}, colors=flavio.plots.colors.pastel)
 
 
-def diff_plot_th(obs_name, x_min, x_max, wc=None, steps=100, **kwargs):
+def diff_plot_th(obs_name, x_min, x_max, wc=None, steps=100, scale_factor=1, **kwargs):
     r"""Plot the central theory prediction of an observable dependending on
     a continuous parameter, e.g. $q^2$.
 
@@ -79,6 +79,8 @@ def diff_plot_th(obs_name, x_min, x_max, wc=None, steps=100, **kwargs):
       Wilson coefficients
     - `steps` (optional): number of steps in x. Defaults to 100. Less is
       faster but less precise.
+    - `scale_factor` (optional): factor by which all values will be multiplied.
+      Defaults to 1.
 
     Additional keyword arguments are passed to the matplotlib plot function,
     e.g. 'c' for colour.
@@ -95,12 +97,13 @@ def diff_plot_th(obs_name, x_min, x_max, wc=None, steps=100, **kwargs):
     ax = plt.gca()
     if 'c' not in kwargs and 'color' not in kwargs:
         kwargs['c'] = 'k'
-    ax.plot(x_arr, obs_arr, **kwargs)
+    ax.plot(x_arr, scale_factor * np.asarray(obs_arr), **kwargs)
 
 
 def diff_plot_th_err(obs_name, x_min, x_max, wc=None, steps=100,
                         steps_err=5, N=100, threads=1, label=None,
-                        plot_args=None, fill_args=None):
+                        plot_args=None, fill_args=None,
+                        scale_factor=1):
     r"""Plot the theory prediction of an observable dependending on
     a continuous parameter, e.g. $q^2$,
     with uncertainties as a function of this parameter.
@@ -123,6 +126,8 @@ def diff_plot_th_err(obs_name, x_min, x_max, wc=None, steps=100,
       to the matplotlib plot function, e.g. 'c' for colour.
     - `fill_args` (optional): dictionary with keyword arguments to be passed
       to the matplotlib fill_between function, e.g. 'facecolor'
+    - `scale_factor` (optional): factor by which all values will be multiplied.
+      Defaults to 1.
 
     A word of caution regarding the `steps_err` option. By default, the
     uncertainty is only computed at 10 steps and is interpolated in
@@ -154,13 +159,13 @@ def diff_plot_th_err(obs_name, x_min, x_max, wc=None, steps=100,
         plot_args['label'] = label
     if 'alpha' not in fill_args:
         fill_args['alpha'] = 0.5
-    ax.plot(x_arr, obs_arr, **plot_args)
+    ax.plot(x_arr, scale_factor * np.asarray(obs_arr), **plot_args)
     interp_err = scipy.interpolate.interp1d(x_err_arr, obs_err_arr,
                                             kind='quadratic')
     obs_err_arr_int = interp_err(x_arr)
     ax.fill_between(x_arr,
-                    obs_arr - obs_err_arr_int,
-                    obs_arr + obs_err_arr_int,
+                    scale_factor * np.asarray(obs_arr - obs_err_arr_int),
+                    scale_factor * np.asarray(obs_arr + obs_err_arr_int),
                     **fill_args)
 
 
@@ -218,6 +223,7 @@ def bin_plot_th(obs_name, bin_list, wc=None, divide_binwidth=False, N=50, thread
 
 def bin_plot_exp(obs_name, col_dict=None, divide_binwidth=False, include_measurements=None,
                 include_bins=None, exclude_bins=None,
+                scale_factor=1,
                 **kwargs):
     r"""Plot all existing binned experimental measurements of an observable
     dependending on a continuous parameter, e.g. $q^2$ (in the form of
@@ -244,6 +250,8 @@ def bin_plot_exp(obs_name, col_dict=None, divide_binwidth=False, include_measure
       boundaries) not to include in the plot. By default, all measured bins
       will be included. Should not be specified simultaneously with
       `include_bins`.
+    - `scale_factor` (optional): factor by which all values will be multiplied.
+      Defaults to 1.
 
     Additional keyword arguments are passed to the matplotlib errorbar function,
     e.g. 'c' for colour.
@@ -303,8 +311,97 @@ def bin_plot_exp(obs_name, col_dict=None, divide_binwidth=False, include_measure
                     # twice in the legend)
                     kwargs_m['label'] = m_obj.experiment
                     _experiment_labels.append(m_obj.experiment)
+            y = scale_factor * np.array(y)
+            dy_lower = scale_factor * np.array(dy_lower)
+            dy_upper = scale_factor * np.array(dy_upper)
             ax.errorbar(x, y, yerr=[dy_lower, dy_upper], xerr=dx, fmt='.', **kwargs_m)
     return y, bins
+
+
+def diff_plot_exp(obs_name, col_dict=None, include_measurements=None,
+                include_x=None, exclude_x=None,
+                scale_factor=1,
+                **kwargs):
+    r"""Plot all existing experimental measurements of an observable
+    dependending on a continuous parameter, e.g. $q^2$ (in the form of
+    coloured error bars).
+
+    Parameters:
+
+    - `col_dict` (optional): a dictionary to assign colours to specific
+      experiments, e.g. `{'BaBar': 'b', 'Belle': 'r'}`
+    - `include_measurements` (optional): a list of strings with measurement
+      names (see measurements.yml) to include in the plot. By default, all
+      existing measurements will be included.
+    - `include_x` (optional): a list of values
+      to include in the plot. By default, all measured values
+      will be included. Should not be specified simultaneously with
+      `exclude_x`.
+    - `exclude_x` (optional): a list of values
+      not to include in the plot. By default, all measured values
+      will be included. Should not be specified simultaneously with
+      `include_x`.
+    - `scale_factor` (optional): factor by which all values will be multiplied.
+      Defaults to 1.
+
+    Additional keyword arguments are passed to the matplotlib errorbar function,
+    e.g. 'c' for colour.
+    """
+    obs = flavio.classes.Observable[obs_name]
+    if not obs.arguments or len(obs.arguments) != 1:
+        raise ValueError(r"Only observables that depend on a single variable are allowed")
+    _experiment_labels = [] # list of experiments appearing in the plot legend
+    xs = []
+    for m_name, m_obj in flavio.Measurement.instances.items():
+        if include_measurements is not None and m_name not in include_measurements:
+            continue
+        obs_name_list = m_obj.all_parameters
+        obs_name_list_x = [o for o in obs_name_list if isinstance(o, tuple) and o[0]==obs_name]
+        if not obs_name_list_x:
+            continue
+        central = m_obj.get_central_all()
+        err = m_obj.get_1d_errors_rightleft()
+        x = []
+        y = []
+        dy_lower = []
+        dy_upper = []
+        for _, X in obs_name_list_x:
+            if include_x is not None:
+                if exclude_x is not None:
+                    raise ValueError("Please only specify include_x or exclude_x, not both")
+                elif X not in include_x:
+                    continue
+            elif exclude_x is not None:
+                if X in exclude_x:
+                    continue
+            xs.append(X)
+            c = central[(obs_name, X)]
+            e_right, e_left = err[(obs_name, X)]
+            ax=plt.gca()
+            x.append(X)
+            y.append(c)
+            dy_lower.append(e_left)
+            dy_upper.append(e_right)
+        kwargs_m = kwargs.copy() # copy valid for this measurement only
+        if x or y: # only if a data point exists
+            if col_dict is not None:
+                if m_obj.experiment in col_dict:
+                    col = col_dict[m_obj.experiment]
+                    kwargs_m['c'] = col
+            if 'label' not in kwargs_m:
+                if m_obj.experiment not in _experiment_labels:
+                    # if there is no plot legend entry for the experiment yet,
+                    # add it and add the experiment to the list keeping track
+                    # of existing labels (we don't want an experiment to appear
+                    # twice in the legend)
+                    kwargs_m['label'] = m_obj.experiment
+                    _experiment_labels.append(m_obj.experiment)
+            y = scale_factor * np.array(y)
+            dy_lower = scale_factor * np.array(dy_lower)
+            dy_upper = scale_factor * np.array(dy_upper)
+            ax.errorbar(x, y, yerr=[dy_lower, dy_upper], fmt='.', **kwargs_m)
+    return y, xs
+
 
 def density_contour_data(x, y, covariance_factor=None, n_bins=None, n_sigma=(1, 2)):
     r"""Generate the data for a plot with confidence contours of the density
