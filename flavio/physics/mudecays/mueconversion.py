@@ -27,18 +27,18 @@ def CR_mue(wc_obj, par, nucl):
   wc = wc_obj.get_wc('mue', scale, par, nf_out=3)
   AL = np.sqrt(2)/(4*par['GF']*mm)*wc['Cgamma_emu'].conjugate()
   AR = np.sqrt(2)/(4*par['GF']*mm)*wc['Cgamma_mue']
-  gRV = {'u': 4*(wc['CVRR_mueuu'] + wc['CVLR_mueuu']),
-         'd': 4*(wc['CVRR_muedd'] + wc['CVLR_muedd']),
-         's': 4*(wc['CVRR_muess'] + wc['CVLR_muess'])}
-  gLV = {'u': 4*(wc['CVLR_uumue'] + wc['CVLL_mueuu']),
-         'd': 4*(wc['CVLR_ddmue'] + wc['CVLL_muedd']),
-         's': 4*(wc['CVLR_ssmue'] + wc['CVLL_muess'])}
-  gRS = {'u': 4*(wc['CSRR_emuuu'].conjugate() + wc['CSRL_mueuu']),
-         'd': 4*(wc['CSRR_emudd'].conjugate() + wc['CSRL_muedd']),
-         's': 4*(wc['CSRR_emuss'].conjugate() + wc['CSRL_muess'])}
-  gLS = {'u': 4*(wc['CSRL_emuuu'].conjugate() + wc['CSRR_mueuu']),
-         'd': 4*(wc['CSRL_emudd'].conjugate() + wc['CSRR_muedd']),
-         's': 4*(wc['CSRL_emuss'].conjugate() + wc['CSRR_muess'])}
+  gRV = {'u': -4/(np.sqrt(2)*par['GF'])*(wc['CVRR_mueuu'] + wc['CVLR_mueuu']),
+         'd': -4/(np.sqrt(2)*par['GF'])*(wc['CVRR_muedd'] + wc['CVLR_muedd']),
+         's': -4/(np.sqrt(2)*par['GF'])*(wc['CVRR_muess'] + wc['CVLR_muess'])}
+  gLV = {'u': -4/(np.sqrt(2)*par['GF'])*(wc['CVLR_uumue'] + wc['CVLL_mueuu']),
+         'd': -4/(np.sqrt(2)*par['GF'])*(wc['CVLR_ddmue'] + wc['CVLL_muedd']),
+         's': -4/(np.sqrt(2)*par['GF'])*(wc['CVLR_ssmue'] + wc['CVLL_muess'])}
+  gRS = {'u': -4/(np.sqrt(2)*par['GF'])*(wc['CSRR_emuuu'].conjugate() + wc['CSRL_mueuu']),
+         'd': -4/(np.sqrt(2)*par['GF'])*(wc['CSRR_emudd'].conjugate() + wc['CSRL_muedd']),
+         's': -4/(np.sqrt(2)*par['GF'])*(wc['CSRR_emuss'].conjugate() + wc['CSRL_muess'])}
+  gLS = {'u': -4/(np.sqrt(2)*par['GF'])*(wc['CSRL_emuuu'].conjugate() + wc['CSRR_mueuu']),
+         'd': -4/(np.sqrt(2)*par['GF'])*(wc['CSRL_emudd'].conjugate() + wc['CSRR_muedd']),
+         's': -4/(np.sqrt(2)*par['GF'])*(wc['CSRL_emuss'].conjugate() + wc['CSRR_muess'])}
   lhc = (AR.conjugate()*D + (2*gLV['u'] + gLV['d'])*Vp
          +(gLV['u'] + 2*gLV['d'])*Vn
          + (GuS* gLS['u'] + GdS*gLS['d'] + GsS*gLS['s'])*Sp
