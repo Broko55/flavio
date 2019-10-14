@@ -13,6 +13,7 @@ import warnings
 import yaml
 import inspect
 import urllib.parse
+import re
 
 
 class NamedInstanceMetaclass(type):
@@ -65,6 +66,12 @@ class NamedInstanceClass(object, metaclass=NamedInstanceMetaclass):
         """Delete all instances."""
         cls.instances = OrderedDict()
 
+    @classmethod
+    def find(cls, regex):
+        """Find all instance names matching the regular expression `regex`."""
+        rc = re.compile(regex)
+        return list(filter(rc.search, cls.instances))
+
     def set_description(self, description):
         self.description = description
 
@@ -88,6 +95,17 @@ class Parameter(NamedInstanceClass):
     def __init__(self, name):
         super().__init__(name)
         self.tex = ''
+
+    def __repr__(self):
+        return "Parameter('{}')".format(self.name)
+
+    def _repr_markdown_(self):
+        md = "### Parameter `{}`\n\n".format(self.name)
+        if self.tex:
+            md += "Parameter: {}\n\n".format(self.tex)
+        if self.description:
+            md += "Description: {}\n\n".format(self.description)
+        return md
 
 
 class Constraints(object):

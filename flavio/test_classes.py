@@ -348,6 +348,17 @@ class TestClasses(unittest.TestCase):
                          "Observable('repr test', arguments=['blu'])")
         del Observable['repr test']
 
+    def test_repr_par(self):
+        ptest = Parameter('repr test')
+        self.assertEqual(repr(ptest),
+                         "Parameter('repr test')")
+        ptest._repr_markdown_()
+        ptest.description = "bla"
+        self.assertIn("bla", ptest._repr_markdown_())
+        ptest.tex = "blo"
+        self.assertIn("blo", ptest._repr_markdown_())
+        del Parameter['repr test']
+
     def test_argument_format(self):
         with self.assertRaises(KeyError):
             Observable.argument_format('dont_exist')
@@ -387,3 +398,14 @@ class TestClasses(unittest.TestCase):
             Observable['FL(B0->K*mumu)'].get_measurements(),
             []
         )
+
+    def test_find(self):
+        class TestClass(NamedInstanceClass):
+            pass
+
+        TestClass('test word 1')
+        TestClass('x test word 2')
+        TestClass('test 3')
+        self.assertEqual(TestClass.find('word'), ['test word 1', 'x test word 2'])
+        self.assertEqual(TestClass.find('^x'), ['x test word 2'])
+        self.assertEqual(TestClass.find('s.*3'), ['test 3'])
